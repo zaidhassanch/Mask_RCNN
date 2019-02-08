@@ -472,6 +472,9 @@ def display_table(table):
         html += "<tr>" + row_html + "</tr>"
     html = "<table>" + html + "</table>"
     IPython.display.display(IPython.display.HTML(html))
+    htmlFinal = IPython.display.HTML(html)
+    with open('html_file.html', 'w') as f:
+        f.write(htmlFinal.data)
 
 
 def display_weight_stats(model):

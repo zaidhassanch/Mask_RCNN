@@ -1,28 +1,20 @@
 """
 Mask R-CNN
 Configurations and data loading code for MS COCO.
-
 Copyright (c) 2017 Matterport, Inc.
 Licensed under the MIT License (see LICENSE for details)
 Written by Waleed Abdulla
-
 ------------------------------------------------------------
-
 Usage: import the module (see Jupyter notebooks for examples), or run from
        the command line as such:
-
     # Train a new model starting from pre-trained COCO weights
     python3 coco.py train --dataset=/path/to/coco/ --model=coco
-
     # Train a new model starting from ImageNet weights. Also auto download COCO dataset
     python3 coco.py train --dataset=/path/to/coco/ --model=imagenet --download=True
-
     # Continue training a model that you had trained earlier
     python3 coco.py train --dataset=/path/to/coco/ --model=/path/to/weights.h5
-
     # Continue training the last model you trained
     python3 coco.py train --dataset=/path/to/coco/ --model=last
-
     # Run COCO evaluatoin on the last model you trained
     python3 coco.py evaluate --dataset=/path/to/coco/ --model=last
 """
@@ -93,7 +85,7 @@ class CocoConfig(Config):
 
 class CocoDataset(utils.Dataset):
     def load_coco(self, dataset_dir, subset, year=DEFAULT_DATASET_YEAR, class_ids=None,
-                  class_map=None, return_coco=False, auto_download=False):
+                  class_map=None, return_coco=False, auto_download=False, id_start=0, id_end=1):
         """Load a subset of the COCO dataset.
         dataset_dir: The root directory of the COCO dataset.
         subset: What to load (train, val, minival, valminusminival)
@@ -132,7 +124,7 @@ class CocoDataset(utils.Dataset):
         # Add classes
         for i in class_ids:
             self.add_class("coco", i, coco.loadCats(i)[0]["name"])
-
+        image_ids = image_ids[id_start:id_end]
         # Add images
         for i in image_ids:
             self.add_image(
@@ -219,11 +211,9 @@ class CocoDataset(utils.Dataset):
 
     def load_mask(self, image_id):
         """Load instance masks for the given image.
-
         Different datasets use different ways to store masks. This
         function converts the different mask format to one format
         in the form of a bitmap [height, width, instances].
-
         Returns:
         masks: A bool array of shape [height, width, instance count] with
             one mask per instance.
@@ -448,7 +438,7 @@ if __name__ == '__main__':
             DETECTION_MIN_CONFIDENCE = 0
         config = InferenceConfig()
     config.display()
-
+    
     # Create model
     if args.command == "train":
         model = modellib.MaskRCNN(mode="training", config=config,
@@ -471,10 +461,12 @@ if __name__ == '__main__':
 
     # Load weights
     print("Loading weights ", model_path)
-    model.load_weights(model_path, by_name=True)
+    model.load_weights(model_path, by_name=True) #, ...
+    #exclude = ["mrcnn_mask_conv1", mrcnn_mask_bn1, mrcnn_mask_conv2, mrcnn_mask_bn2, mrcnn_mask_conv3,mrcnn_mask_bn3,mrcnn_mask_conv4, mrcnn_mask_deconv, mrcnn_mask])
 
     # Train or evaluate
     if args.command == "train":
+        """
         # Training dataset. Use the training set and 35K from the
         # validation set, as as in the Mask RCNN paper.
         dataset_train = CocoDataset()
@@ -482,13 +474,17 @@ if __name__ == '__main__':
         if args.year in '2014':
             dataset_train.load_coco(args.dataset, "valminusminival", year=args.year, auto_download=args.download)
         dataset_train.prepare()
-
+        """
         # Validation dataset
+        dataset_train = CocoDataset()
+        val_type = "val" if args.year in '2017' else "minival"
+        dataset_train.load_coco(args.dataset, val_type, year=args.year, auto_download=args.download, id_start=0, id_end=1)
+        dataset_train.prepare()
+
         dataset_val = CocoDataset()
         val_type = "val" if args.year in '2017' else "minival"
-        dataset_val.load_coco(args.dataset, val_type, year=args.year, auto_download=args.download)
+        dataset_val.load_coco(args.dataset, val_type, year=args.year, auto_download=args.download, id_start=1, id_end=2)
         dataset_val.prepare()
-
         # Image Augmentation
         # Right/Left flip 50% of the time
         augmentation = imgaug.augmenters.Fliplr(0.5)

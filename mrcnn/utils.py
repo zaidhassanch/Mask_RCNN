@@ -265,6 +265,7 @@ class Dataset(object):
             if info['source'] == source and info["id"] == class_id:
                 # source.class_id combination already available, skip
                 return
+        print(source);
         # Add the class
         self.class_info.append({
             "source": source,
