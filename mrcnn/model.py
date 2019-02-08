@@ -1027,11 +1027,12 @@ def build_fpn_mask_graph(rois, feature_maps, image_meta,
     #-------------------
     x_up = KL.TimeDistributed(KL.Conv2DTranspose(256, (2, 2), strides=2, activation="relu"),
                            name="mrcnn_mask_deconv")(x4a)
-    print(x_up)
+
     # should activation in line below be sigmoid or relu, should probably be relu
     xmaskBranch = KL.TimeDistributed(KL.Conv2D(num_classes, (1, 1), strides=1, activation="relu"),
                            name="mrcnn_mask")(x_up)
-    x = xmaskBranch + xfcBranch
+    x = KL.Add()([xmaskBranch, xfcBranch])
+    x = KL.Activation('sigmoid')(x)
 
     return x
 
